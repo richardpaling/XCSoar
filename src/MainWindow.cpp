@@ -447,7 +447,8 @@ MainWindow::Destroy() noexcept
 void
 MainWindow::FinishStartup() noexcept
 {
-  timer.Schedule(std::chrono::milliseconds(500)); // 2 times per second
+  // UI update frequency (default value 2 times)
+  timer.Schedule(std::chrono::milliseconds(200)); // 5 times per second
 
   ResumeThreads();
 }

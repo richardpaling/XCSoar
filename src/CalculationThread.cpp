@@ -19,10 +19,10 @@ CalculationThread::CalculationThread(GlideComputer &_glide_computer)
                    screen cannot be updated that often */
                 std::chrono::milliseconds{900},
 #else
-                std::chrono::milliseconds{450},
+                std::chrono::milliseconds{180}, //org 450
 #endif
-                std::chrono::milliseconds{100},
-                std::chrono::milliseconds{50}),
+                std::chrono::milliseconds{40}, //org 100
+                std::chrono::milliseconds{20}), // org 20
    force(false),
    glide_computer(_glide_computer) {
 }
