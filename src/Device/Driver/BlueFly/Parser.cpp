@@ -61,7 +61,7 @@ BlueFlyDevice::ParsePRS(const char *content, NMEAInfo &info)
   if (endptr != content) {
     AtmosphericPressure pressure = AtmosphericPressure::Pascal(value);
 
-    kalman_filter.Update(pressure.GetHectoPascal(), 0.25, 0.02);
+    kalman_filter.Update(pressure.GetHectoPascal(), 0.10, 0.02);
 
     info.ProvideNoncompVario(ComputeNoncompVario(kalman_filter.GetXAbs(),
                                                  kalman_filter.GetXVel()));
