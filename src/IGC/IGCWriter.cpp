@@ -186,7 +186,7 @@ IGCWriter::LogPoint(const IGCFix &fix, int epe, int satellites)
   p = FormatIGCLocation(p, fix.location);
 
   sprintf(p, "%c%05d%05d%03d%02d",
-          fix.gps_valid ? 'A' : 'V',
+          fix.gps_valid ? 'A' : 'A', //'V',
           NormalizeIGCAltitude(fix.pressure_altitude),
           NormalizeIGCAltitude(fix.gps_altitude),
           epe, satellites);
