@@ -36,6 +36,14 @@
 #include "UISettings.hpp"
 #include "Interface.hpp"
 
+#ifdef ANDROID
+#include "Android/ReceiveTask.hpp"
+#include "Engine/Task/Ordered/OrderedTask.hpp"
+#include "Dialogs/Task/TaskDialogs.hpp"
+#include "ui/event/Globals.hpp"
+#include "ui/event/Queue.hpp"
+#endif
+
 static constexpr unsigned separator_height = 2;
 
 #ifdef HAVE_SHOW_MENU_BUTTON
@@ -189,13 +197,7 @@ MainWindow::InitialiseConfigured()
   menu_bar = new MenuBar(*this, look->dialog.button);
 
   ReinitialiseLayout_vario(ib_layout);
-
   ReinitialiseLayoutTA(rc, ib_layout);
-
-  WindowStyle hidden_border;
-  hidden_border.Hide();
-  hidden_border.Border();
-
   ReinitialiseLayout_flarm(rc, ib_layout);
 
 #ifdef HAVE_SHOW_MENU_BUTTON
@@ -437,6 +439,51 @@ MainWindow::ReinitialiseLayout_flarm(PixelRect rc,
 }
 
 void
+MainWindow::ReinitialiseLook() noexcept
+{
+  const auto &ui_settings = CommonInterface::GetUISettings();
+
+  const InfoBoxLayout::Layout ib_layout =
+    InfoBoxLayout::Calculate(GetClientRect(),
+                             ui_settings.info_boxes.geometry);
+
+  assert(look != nullptr);
+  look->InitialiseConfigured(CommonInterface::GetUISettings(),
+                             Fonts::map, Fonts::map_bold,
+                             ib_layout.control_size.width);
+
+  InfoBoxManager::ScheduleRedraw();
+}
+
+#ifdef ANDROID
+
+void
+MainWindow::OnLook() noexcept
+{
+  ReinitialiseLook();
+}
+
+void
+MainWindow::OnTaskReceived() noexcept
+{
+  if (!IsRunning())
+    /* postpone until XCSoar is running */
+    return;
+
+  if (HasDialog())
+    /* don't intercept an existing modal dialog */
+    return;
+
+  auto task = GetReceivedTask();
+  if (!task)
+    return;
+
+  dlgTaskManagerShowModal(std::move(task));
+}
+
+#endif // ANDROID
+
+void
 MainWindow::Destroy() noexcept
 {
   Deinitialise();
@@ -648,6 +695,15 @@ void
 MainWindow::RunTimer() noexcept
 {
   LateInitialise();
+
+#ifdef ANDROID
+  /* if we still havn't processed the task that was received from a QR
+     code, re-post the TASK_RECEIVED event to invoke OnTaskReceived()
+     again; we must not open the task manager dialog here because it
+     would block the timer while the dialog is open */
+  if (IsRunning() && !HasDialog() && HasReceivedTask())
+    UI::event_queue->Inject(UI::Event::TASK_RECEIVED);
+#endif
 
   ProcessTimer();
 

@@ -13,12 +13,13 @@
 #include "NMEA/MoreData.hpp"
 #include "NMEA/Derived.hpp"
 
-[[gnu::pure]]
-__attribute__((always_inline))
+#include <concepts>
+
+[[gnu::pure]] [[gnu::always_inline]]
 static inline NearestAirspace
 CalculateNearestAirspaceHorizontal(const GeoPoint &location,
                                    const FlatProjection &projection,
-                                   const AbstractAirspace &airspace)
+                                   const AbstractAirspace &airspace) noexcept
 {
   const auto closest = airspace.ClosestPoint(location, projection);
   assert(closest.IsValid());
@@ -33,16 +34,14 @@ struct CompareNearestAirspace {
   }
 };
 
-template<typename Predicate>
 [[gnu::pure]]
 static NearestAirspace
 FindHorizontal(const GeoPoint &location,
                const Airspaces &airspace_database,
-               Predicate &&predicate)
+               std::predicate<const AbstractAirspace &> auto predicate) noexcept
 {
   const auto &projection = airspace_database.GetProjection();
-  return FindMinimum(airspace_database, location, 30000,
-                     std::forward<Predicate>(predicate),
+  return FindMinimum(airspace_database, location, 30000, predicate,
                      [&location, &projection](ConstAirspacePtr &&airspace){
                        return CalculateNearestAirspaceHorizontal(location, projection, *airspace);
                      },
@@ -53,7 +52,7 @@ FindHorizontal(const GeoPoint &location,
 NearestAirspace
 NearestAirspace::FindHorizontal(const MoreData &basic,
                                 const ProtectedAirspaceWarningManager &airspace_warnings,
-                                const Airspaces &airspace_database)
+                                const Airspaces &airspace_database) noexcept
 {
   if (!basic.location_available)
     /* can't check for airspaces without a GPS fix */
@@ -84,9 +83,9 @@ NearestAirspace::FindHorizontal(const MoreData &basic,
 [[gnu::pure]]
 NearestAirspace
 NearestAirspace::FindVertical(const MoreData &basic,
-                      const DerivedInfo &calculated,
-                      const ProtectedAirspaceWarningManager &airspace_warnings,
-                      const Airspaces &airspace_database)
+                              const DerivedInfo &calculated,
+                              const ProtectedAirspaceWarningManager &airspace_warnings,
+                              const Airspaces &airspace_database) noexcept
 {
   if (!basic.location_available ||
       (!basic.baro_altitude_available && !basic.gps_altitude_available))

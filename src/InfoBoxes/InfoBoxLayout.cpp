@@ -4,7 +4,8 @@
 #include "InfoBoxes/InfoBoxLayout.hpp"
 #include "Border.hpp"
 #include "util/Macros.hpp"
-#include "util/Clamp.hpp"
+
+#include <algorithm> // for std::clamp()
 
 static constexpr double CONTROLHEIGHTRATIO = 7.4;
 
@@ -159,8 +160,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
 
     right = layout.vario.left;
 
-    /* fall through */
-    gcc_fallthrough;
+    [[fallthrough]];
 
   case InfoBoxSettings::Geometry::BOTTOM_RIGHT_8:
   case InfoBoxSettings::Geometry::OBSOLETE_BOTTOM_RIGHT_8:
@@ -186,8 +186,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
 
     right = layout.vario.left;
 
-    /* fall through */
-    gcc_fallthrough;
+    [[fallthrough]];
 
   case InfoBoxSettings::Geometry::TOP_LEFT_8:
   case InfoBoxSettings::Geometry::OBSOLETE_TOP_LEFT_8:
@@ -517,18 +516,18 @@ static constexpr unsigned
 CalculateInfoBoxRowHeight(unsigned screen_height,
                           unsigned control_width) noexcept
 {
-  return Clamp(unsigned(screen_height / CONTROLHEIGHTRATIO),
-               control_width * 5 / 7,
-               control_width);
+  return std::clamp(unsigned(screen_height / CONTROLHEIGHTRATIO),
+                    control_width * 5 / 7,
+                    control_width);
 }
 
 static constexpr unsigned
 CalculateInfoBoxColumnWidth(unsigned screen_width,
                             unsigned control_height) noexcept
 {
-  return Clamp(unsigned(screen_width / CONTROLHEIGHTRATIO * 1.3),
-               control_height,
-               control_height * 7 / 5);
+  return std::clamp(unsigned(screen_width / CONTROLHEIGHTRATIO * 1.3),
+                    control_height,
+                    control_height * 7 / 5);
 }
 
 void

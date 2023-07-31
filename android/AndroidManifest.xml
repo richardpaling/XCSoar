@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="org.xcsoar"
           android:installLocation="auto"
-          android:versionCode="155"
-          android:versionName="7.34">
+          android:versionCode="161"
+          android:versionName="7.40">
   <application
       android:requestLegacyExternalStorage="true"
       android:preserveLegacyExternalStorage="true"
@@ -45,6 +45,20 @@
 
     <service android:name=".MyService" android:foregroundServiceType="location"/>
 
+    <!-- this Activity receives scanned QR codes -->
+    <activity android:name=".ReceiveTaskActivity"
+              android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <!-- URI scheme for XCTrack v2 tasks, see
+             https://xctrack.org/Competition_Interfaces.html -->
+        <data android:scheme="xctsk" />
+      </intent-filter>
+    </activity>
+
     <provider android:name="org.xcsoar.FileProvider"
               android:authorities="org.xcsoar"
               android:exported="false"
@@ -64,7 +78,9 @@
   </application>
 
   <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="31"/>
-  <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+
+  <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+                   android:usesPermissionFlags="neverForLocation"/>
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
@@ -75,18 +91,16 @@
   <uses-permission android:name="android.permission.VIBRATE"/>
 
   <!-- legacy Bluetooth permission, required on older Android versions -->
-  <uses-permission android:name="android.permission.BLUETOOTH"/>
-  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+  <uses-permission android:name="android.permission.BLUETOOTH"
+                   android:maxSdkVersion="30"/>
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+                   android:maxSdkVersion="30"/>
 
   <!-- required since Android 9 / targetSdkVersion 28 -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
   <!-- required since Android 10 / targetSdkVersion 29 -->
-  <!-- disabled temporarily because the evil Google overlords want us
-       to provide a YouTube video explaining this requirement, see
-       https://support.google.com/googleplay/android-developer/answer/9799150#zippy=%2Cstep-provide-a-video-demonstration
-       -->
-  <!-- uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/ -->
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 
   <!-- XCSoar renders maps and the UI with GLES 2.0 -->
   <uses-feature android:glEsVersion="0x00020000" android:required="true"/>

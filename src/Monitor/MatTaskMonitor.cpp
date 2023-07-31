@@ -14,6 +14,7 @@
 #include "Engine/Waypoint/Waypoint.hpp"
 #include "Engine/Waypoint/Waypoints.hpp"
 #include "Components.hpp"
+#include "DataComponents.hpp"
 #include "Interface.hpp"
 
 class MatTaskAddWidget final
@@ -123,7 +124,7 @@ FindMatTurnpoint()
       /* require a valid MAT task */
       !stats.task_valid || !stats.is_mat ||
       /* task must be started already, but not finished */
-      !stats.start.task_started || stats.task_finished ||
+      !stats.start.HasStarted() || stats.task_finished ||
       /* not inside an existing observation zone */
       stats.inside_oz ||
       /* valid GPS fix required to calculate nearest turn point */
@@ -140,9 +141,9 @@ FindMatTurnpoint()
     return wp.IsTurnpoint();
   };
 
-  auto wp = way_points.GetNearestIf(basic.location,
-                                    CylinderZone::MAT_RADIUS,
-                                    turnpoint_predicate);
+  auto wp = data_components->waypoints->GetNearestIf(basic.location,
+                                                     CylinderZone::MAT_RADIUS,
+                                                     turnpoint_predicate);
 
   if (wp == nullptr)
     /* no nearby turn point */

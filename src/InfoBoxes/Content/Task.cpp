@@ -17,6 +17,7 @@
 #include "Renderer/NextArrowRenderer.hpp"
 #include "UIGlobals.hpp"
 #include "Look/Look.hpp"
+#include "DataComponents.hpp"
 
 #include <tchar.h>
 
@@ -30,7 +31,8 @@ ShowNextWaypointDetails() noexcept
   if (wp == nullptr)
     return;
 
-  dlgWaypointDetailsShowModal(std::move(wp), false);
+  dlgWaypointDetailsShowModal(data_components->waypoints.get(),
+                              std::move(wp), false);
 }
 
 static std::unique_ptr<Widget>
@@ -484,7 +486,7 @@ UpdateInfoBoxTaskSpeedHour(InfoBoxData &data) noexcept
 {
   const WindowStats &window =
     CommonInterface::Calculated().task_stats.last_hour;
-  if (window.duration < 0) {
+  if (!window.IsDefined()) {
     data.SetInvalid();
     return;
   }
@@ -754,7 +756,7 @@ void
 UpdateInfoBoxCruiseEfficiency(InfoBoxData &data) noexcept
 {
   const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
-  if (!task_stats.task_valid || !task_stats.start.task_started) {
+  if (!task_stats.task_valid || !task_stats.start.HasStarted()) {
     data.SetInvalid();
     return;
   }

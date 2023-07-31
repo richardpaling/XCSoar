@@ -4,8 +4,10 @@
 #pragma once
 
 #include "co/InvokeTask.hxx"
+#include "co/Task.hxx"
 #include "event/Loop.hxx"
 #include "event/DeferEvent.hxx"
+#include "util/ReturnValue.hxx"
 
 class CoInstance {
   EventLoop event_loop;
@@ -29,7 +31,19 @@ public:
       std::rethrow_exception(error);
   }
 
+  template<typename T>
+  auto Run(Co::Task<T> &&task) {
+    ReturnValue<T> result;
+    Run(RunTask(std::move(task), result));
+    return std::move(result).Get();
+  }
+
 private:
+  template<typename T>
+  Co::InvokeTask RunTask(Co::Task<T> task, ReturnValue<T> &result_r) {
+    result_r.Set(co_await task);
+  }
+
   void OnCompletion(std::exception_ptr _error) noexcept {
     error = std::move(_error);
     event_loop.Break();

@@ -3,7 +3,6 @@
 
 #include "UtilsSettings.hpp"
 #include "Protection.hpp"
-#include "Look/Look.hpp"
 #include "MainWindow.hpp"
 #include "Computer/Settings.hpp"
 #include "MapSettings.hpp"
@@ -13,7 +12,6 @@
 #include "Topography/TopographyGlue.hpp"
 #include "Dialogs/Dialogs.h"
 #include "Device/device.hpp"
-#include "Components.hpp"
 #include "Interface.hpp"
 #include "ActionInterface.hpp"
 #include "Language/Language.hpp"
@@ -41,6 +39,8 @@
 #include "FLARM/Glue.hpp"
 #include "Weather/Rasp/RaspStore.hpp"
 #include "Weather/Rasp/Configured.hpp"
+#include "Components.hpp"
+#include "DataComponents.hpp"
 #include "DataGlobals.hpp"
 
 bool DevicePortChanged = false;
@@ -103,9 +103,12 @@ SettingsLeave(const UISettings &old_ui_settings)
   if (TerrainFileChanged)
     main_window.LoadTerrain();
 
+  auto &way_points = *data_components->waypoints;
+
   if (WaypointFileChanged || AirfieldFileChanged) {
     // re-load waypoints
-    WaypointGlue::LoadWaypoints(way_points, terrain, operation);
+    WaypointGlue::LoadWaypoints(way_points, data_components->terrain.get(),
+                                operation);
     WaypointDetails::ReadFileFromProfile(way_points, operation);
   }
 
@@ -130,9 +133,11 @@ SettingsLeave(const UISettings &old_ui_settings)
 
   if (TopographyFileChanged) {
     main_window.SetTopography(nullptr);
-    topography->Reset();
-    LoadConfiguredTopography(*topography, operation);
-    main_window.SetTopography(topography);
+
+    auto &topography = *data_components->topography;
+    topography.Reset();
+    LoadConfiguredTopography(topography, operation);
+    main_window.SetTopography(&topography);
   }
 
   if (AirspaceFileChanged) {
@@ -142,13 +147,14 @@ SettingsLeave(const UISettings &old_ui_settings)
     if (glide_computer != nullptr)
       glide_computer->ClearAirspaces();
 
+    auto &airspace_database = *data_components->airspaces;
     airspace_database.Clear();
     ReadAirspace(airspace_database,
                  CommonInterface::GetComputerSettings().pressure,
                  operation);
 
-    if (terrain != nullptr)
-      SetAirspaceGroundLevels(airspace_database, *terrain);
+    if (data_components->terrain)
+      SetAirspaceGroundLevels(airspace_database, *data_components->terrain);
   }
 
   if (DevicePortChanged)
@@ -169,12 +175,12 @@ SettingsLeave(const UISettings &old_ui_settings)
   const MapSettings &old_settings_map = old_ui_settings.map;
   const MapSettings &settings_map = ui_settings.map;
 
-  if (settings_map.trail.type != old_settings_map.trail.type ||
-      settings_map.trail.scaling_enabled != old_settings_map.trail.scaling_enabled)
-    main_window.SetLook().map.trail.Initialise(settings_map.trail);
-
-  if (settings_map.waypoint.landable_style != old_settings_map.waypoint.landable_style)
-    main_window.SetLook().map.waypoint.Reinitialise(settings_map.waypoint);
+  if (ui_settings.dark_mode != old_ui_settings.dark_mode ||
+      ui_settings.info_boxes.use_colors != old_ui_settings.info_boxes.use_colors ||
+      settings_map.trail.type != old_settings_map.trail.type ||
+      settings_map.trail.scaling_enabled != old_settings_map.trail.scaling_enabled ||
+      settings_map.waypoint.landable_style != old_settings_map.waypoint.landable_style)
+    main_window.ReinitialiseLook();
 
   ResumeAllThreads();
   main_window.ResumeThreads();

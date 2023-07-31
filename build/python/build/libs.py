@@ -7,7 +7,6 @@ from build.cmake import CmakeProject
 from build.openssl import OpenSSLProject
 from build.gcc import BinutilsProject, GccProject, GccBootstrapProject
 from build.linux import SabotageLinuxHeadersProject
-from build.sdl2 import SDL2Project
 from build.lua import LuaProject
 from .musl import MuslProject
 
@@ -23,7 +22,6 @@ binutils = BinutilsProject(
         '--disable-libquadmath',
         '--disable-lto',
     ],
-    use_actual_arch=True,
 )
 
 linux_headers = SabotageLinuxHeadersProject(
@@ -72,17 +70,15 @@ gcc = GccProject(
         '--with-fpu=neon',
         '--with-float=hard',
     ],
-    use_actual_arch=True,
 )
 
 gcc_bootstrap = GccBootstrapProject(
     gcc.url,
     gcc.alternative_url,
     gcc.md5,
-    '../bin/armv7a-a8neon-linux-musleabihf-g++',
+    '../bin/armv7a-kobo-linux-musleabihf-g++',
     gcc.configure_args,
     install_target='install-gcc',
-    use_actual_arch=True,
 )
 
 musl = MuslProject(
@@ -97,9 +93,9 @@ musl = MuslProject(
 )
 
 openssl = OpenSSLProject(
-    'https://www.openssl.org/source/openssl-3.1.0.tar.gz',
-    'https://artfiles.org/openssl.org/source/openssl-3.1.0.tar.gz',
-    'aaa925ad9828745c4cad9d9efeb273deca820f2cdcf2c3ac7d7c1212b7c497b4',
+    'https://www.openssl.org/source/openssl-3.1.1.tar.gz',
+    'https://artfiles.org/openssl.org/source/openssl-3.1.1.tar.gz',
+    'b3aa61334233b852b63ddb048df181177c2c659eb9d4376008118f9c08d07674',
     'include/openssl/ossl_typ.h',
 )
 
@@ -133,9 +129,9 @@ openssh = AutotoolsProject(
 )
 
 libfmt = CmakeProject(
-    'https://github.com/fmtlib/fmt/archive/9.1.0.tar.gz',
-    'https://github.com/fmtlib/fmt/archive/9.1.0.tar.gz',
-    '5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2',
+    'https://github.com/fmtlib/fmt/archive/10.0.0.tar.gz',
+    'https://github.com/fmtlib/fmt/archive/10.0.0.tar.gz',
+    'ede1b6b42188163a3f2e0f25ad5c0637eca564bd8df74d02e31a311dd6b37ad8',
     'lib/libfmt.a',
     [
         '-DBUILD_SHARED_LIBS=OFF',
@@ -143,8 +139,8 @@ libfmt = CmakeProject(
         '-DFMT_TEST=OFF',
     ],
     name='fmt',
-    version='9.1.0',
-    base='fmt-9.1.0',
+    version='10.0.0',
+    base='fmt-10.0.0',
 )
 
 libsodium = AutotoolsProject(
@@ -155,6 +151,9 @@ libsodium = AutotoolsProject(
     [
         '--disable-shared', '--enable-static',
     ],
+
+    # suppress "visibility default" from sodium/export.h
+    cppflags='-DSODIUM_STATIC'
 )
 
 zlib = ZlibProject(
@@ -165,9 +164,9 @@ zlib = ZlibProject(
 )
 
 freetype = MesonProject(
-    'http://download.savannah.gnu.org/releases/freetype/freetype-2.13.0.tar.xz',
-    'http://downloads.sourceforge.net/project/freetype/freetype2/2.13.0/freetype-2.13.0.tar.xz',
-    '6393c1451c2f1c5f83aed5ea92d280af078e27d9',
+    'http://download.savannah.gnu.org/releases/freetype/freetype-2.13.1.tar.xz',
+    'http://downloads.sourceforge.net/project/freetype/freetype2/2.13.1/freetype-2.13.1.tar.xz',
+    'ea67e3b019b1104d1667aa274f5dc307d8cbd606b399bc32df308a77f1a564bf',
     'lib/libfreetype.a',
     [
         '-Dbrotli=disabled',
@@ -192,9 +191,9 @@ cares = CmakeProject(
 )
 
 curl = CmakeProject(
-    'https://curl.se/download/curl-8.0.1.tar.xz',
-    'https://github.com/curl/curl/releases/download/curl-8_0_1/curl-8.0.1.tar.xz',
-    '0a381cd82f4d00a9a334438b8ca239afea5bfefcfa9a1025f2bf118e79e0b5f0',
+    'https://curl.se/download/curl-8.1.2.tar.xz',
+    'https://github.com/curl/curl/releases/download/curl-8_1_2/curl-8.1.2.tar.xz',
+    '31b1118eb8bfd43cd95d9a3f146f814ff874f6ed3999b29d94f4d1e7dbac5ef6',
     'lib/libcurl.a',
     [
         '-DBUILD_CURL_EXE=OFF',
@@ -226,21 +225,22 @@ curl = CmakeProject(
 
 # Needed by proj
 sqlite3 = AutotoolsProject(
-    'https://sqlite.org/2022/sqlite-autoconf-3390300.tar.gz',
-    'https://fossies.org/linux/misc/sqlite-autoconf-3390300.tar.gz',
-    '7868fb3082be3f2cf4491c6fba6de2bddcbc293a35fefb0624ee3c13f01422b9',
+    'https://www.sqlite.org/2023/sqlite-autoconf-3420000.tar.gz',
+    'https://fossies.org/linux/misc/sqlite-autoconf-3420000.tar.gz',
+    '7abcfd161c6e2742ca5c6c0895d1f853c940f203304a0b49da4e1eca5d088ca6',
     'lib/libsqlite3.a',
     [
         '--disable-shared', '--enable-static',
+        '--disable-fts5',
     ],
     patches=abspath('lib/sqlite/patches'),
     autogen=True,
 )
 
 proj = CmakeProject(
-    'http://download.osgeo.org/proj/proj-9.1.0.tar.gz',
-    'https://fossies.org/linux/privat/proj-9.1.0.tar.gz',
-    '81b2239b94cad0886222cde4f53cb49d34905aad2a1317244a0c30a553db2315',
+    'http://download.osgeo.org/proj/proj-9.2.1.tar.gz',
+    'https://fossies.org/linux/privat/proj-9.2.1.tar.gz',
+    '15ebf4afa8744b9e6fccb5d571fc9f338dc3adcf99907d9e62d1af815d4971a1',
     'lib/libproj.a',
     [
         '-DBUILD_TESTING=OFF',
@@ -256,13 +256,18 @@ proj = CmakeProject(
         '-DBUILD_SHARED_LIBS=OFF',
         '-DUSE_THREAD=OFF',
     ],
+    env={
+        # suppress "visibility default" from geodesic.h
+        'CFLAGS': '-DGEOD_DLL=',
+        'CXXFLAGS': '-DGEOD_DLL=',
+    },
     patches=abspath('lib/proj/patches'),
 )
 
 libpng = CmakeProject(
-    'ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.39.tar.xz',
-    'http://downloads.sourceforge.net/project/libpng/libpng16/1.6.39/libpng-1.6.39.tar.xz',
-    '1f4696ce70b4ee5f85f1e1623dc1229b210029fa4b7aee573df3e2ba7b036937',
+    'ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.40.tar.xz',
+    'http://downloads.sourceforge.net/project/libpng/libpng16/1.6.40/libpng-1.6.40.tar.xz',
+    '535b479b2467ff231a3ec6d92a525906fb8ef27978be4f66dbe05d3f3a01b3a1',
     'lib/libpng.a',
     [
         '-DPNG_SHARED=OFF',
@@ -311,12 +316,18 @@ simple_usbmodeswitch = AutotoolsProject(
 )
 
 libtiff = CmakeProject(
-    'http://download.osgeo.org/libtiff/tiff-4.4.0.tar.gz',
-    'https://fossies.org/linux/misc/tiff-4.4.0.tar.gz',
-    '917223b37538959aca3b790d2d73aa6e626b688e02dcda272aec24c2f498abed',
+    'http://download.osgeo.org/libtiff/tiff-4.5.1.tar.xz',
+    'https://fossies.org/linux/misc/tiff-4.5.1.tar.xz',
+    '3c080867114c26edab3129644a63b708028a90514b7fe3126e38e11d24f9f88a',
     'lib/libtiff.a',
     [
         '-DBUILD_SHARED_LIBS=OFF',
+        '-Dtiff-tools=OFF',
+        '-Dtiff-tests=OFF',
+        '-Dtiff-contrib=OFF',
+        '-Dtiff-docs=OFF',
+        '-Dtiff-deprecated=OFF',
+        '-Dtiff-install=ON',
         '-Dld-version-script=OFF',
         '-Dccitt=OFF',
         '-Dpackbits=OFF',
@@ -326,13 +337,15 @@ libtiff = CmakeProject(
         '-Dlogluv=OFF',
         '-Dmdi=OFF',
         '-Dpixarlog=OFF',
-        '-Djpeg=OFF',
-        '-Dold-jpeg=OFF',
-        '-Djbig=OFF',
-        '-Dlzma=OFF',
-        '-Dzstd=OFF',
-        '-Dlerc=OFF',
-        '-Dwebp=OFF',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_Deflate=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_JPEG=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_JBIG=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_liblzma=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_LERC=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_WebP=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=ON',
+        '-DCMAKE_DISABLE_FIND_PACKAGE_GLUT=ON',
         '-Dcxx=OFF',
         '-Dstrip-chopping=OFF',
         '-Dextrasample-as-alpha=OFF',
@@ -357,34 +370,54 @@ libgeotiff = CmakeProject(
     patches=abspath('lib/libgeotiff/patches'),
 )
 
-sdl2 = SDL2Project(
-    'http://www.libsdl.org/release/SDL2-2.0.22.tar.gz',
-    'https://fossies.org/linux/misc/SDL2-2.0.22.tar.gz',
-    'fe7cbf3127882e3fc7259a75a0cb585620272c51745d3852ab9dd87960697f2e',
+sdl2 = CmakeProject(
+    'http://www.libsdl.org/release/SDL2-2.28.1.tar.gz',
+    'https://fossies.org/linux/misc/SDL2-2.28.1.tar.gz',
+    '4977ceba5c0054dbe6c2f114641aced43ce3bf2b41ea64b6a372d6ba129cb15d',
     'lib/libSDL2.a',
     [
-        '--disable-shared', '--enable-static',
-        '--disable-joystick',
-        '--disable-haptic',
-        '--disable-sensor',
-        '--disable-power',
-        '--disable-filesystem',
-        '--disable-timers',
-        '--disable-file',
-        '--disable-misc',
-        '--disable-locale',
-        '--disable-loadso',
-        '--disable-diskaudio',
-        '--disable-dummyaudio',
-        '--disable-video-dummy',
+        '-DBUILD_SHARED_LIBS=OFF',
+
+        '-DSDL_TEST=OFF',
+
+        # subsystems
+        '-DSDL_RENDER=OFF',
+        '-DSDL_JOYSTICK=OFF',
+        '-DSDL_HAPTIC=OFF',
+        '-DSDL_HIDAPI=OFF',
+        '-DSDL_POWER=OFF',
+        '-DSDL_TIMERS=OFF',
+        '-DSDL_FILE=OFF',
+        '-DSDL_LOADSO=OFF',
+        '-DSDL_CPUINFO=OFF',
+        '-DSDL_FILESYSTEM=OFF',
+        '-DSDL_SENSOR=OFF',
+        '-DSDL_LOCALE=OFF',
+        '-DSDL_MISC=OFF',
+
+        '-DSDL2_DISABLE_SDL2MAIN=OFF',
+
+        '-DSDL_DISKAUDIO=OFF',
+        '-DSDL_DUMMYAUDIO=OFF',
+        '-DSDL_DUMMYVIDEO=OFF',
+        '-DSDL_OPENGL=OFF',
+        '-DSDL_OPENGLES=ON',
+        '-DSDL_OSS=OFF',
+        '-DSDL_JACK=OFF',
+        '-DSDL_ESD=OFF',
+        '-DSDL_ARTS=OFF',
+        '-DSDL_NAS=OFF',
+        '-DSDL_SNDIO=OFF',
+        '-DSDL_LIBSAMPLERATE=OFF',
+        '-DSDL_COCOA=OFF',
     ],
     patches=abspath('lib/sdl2/patches'),
 )
 
 lua = LuaProject(
-    'http://www.lua.org/ftp/lua-5.4.4.tar.gz',
-    'https://fossies.org/linux/misc/lua-5.4.4.tar.gz',
-    '164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61',
+    'http://www.lua.org/ftp/lua-5.4.6.tar.gz',
+    'https://fossies.org/linux/misc/lua-5.4.6.tar.gz',
+    '7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88',
     'lib/liblua.a',
     patches=abspath('lib/lua/patches'),
 )

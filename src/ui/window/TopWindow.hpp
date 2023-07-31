@@ -415,10 +415,14 @@ protected:
 #endif
 
 #ifdef ANDROID
+  virtual void OnLook() noexcept {}
+
   /**
    * @see Event::SURFACE
    */
   void OnSurface() noexcept;
+
+  virtual void OnTaskReceived() noexcept {}
 
   /**
    * @see Event::PAUSE

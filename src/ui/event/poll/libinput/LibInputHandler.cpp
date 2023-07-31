@@ -6,15 +6,16 @@
 #include "ui/event/Queue.hpp"
 #include "ui/event/shared/Event.hpp"
 #include "ui/event/poll/linux/Translate.hpp"
-#include "util/Clamp.hpp"
+
+#include <libinput.h>
+
+#include <algorithm> // for std::clamp()
 
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <termios.h>
-
-#include <libinput.h>
 
 namespace UI {
 
@@ -147,10 +148,11 @@ LibInputHandler::HandleEvent(struct libinput_event *li_event) noexcept
       uint32_t key_code = libinput_event_keyboard_get_key(kb_li_event);
       libinput_key_state key_state =
         libinput_event_keyboard_get_key_state(kb_li_event);
-      bool is_char;
+
+      const auto [translated_key_code, is_char] = TranslateKeyCode(key_code);
       Event e(key_state == LIBINPUT_KEY_STATE_PRESSED
                   ? Event::KEY_DOWN : Event::KEY_UP,
-              TranslateKeyCode(key_code, is_char));
+              translated_key_code);
       e.is_char = is_char;
       queue.Push(e);
     }
@@ -164,9 +166,9 @@ LibInputHandler::HandleEvent(struct libinput_event *li_event) noexcept
       if (-1.0 == y)
         y = 0.0;
       x += libinput_event_pointer_get_dx(ptr_li_event);
-      x = Clamp<double>(x, 0, screen_size.width);
+      x = std::clamp<double>(x, 0, screen_size.width);
       y += libinput_event_pointer_get_dy(ptr_li_event);
-      y = Clamp<double>(y, 0, screen_size.height);
+      y = std::clamp<double>(y, 0, screen_size.height);
       queue.Push(Event(Event::MOUSE_MOTION,
                        PixelPoint((unsigned)x, (unsigned)y)));
     }

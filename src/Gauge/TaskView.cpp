@@ -154,7 +154,8 @@ PaintTask(Canvas &canvas, const WindowProjection &projection,
   OZRenderer ozv(task_look, airspace_look, settings_map.airspace);
   TaskPointRenderer tpv(canvas, projection, task_look,
                         task.GetTaskProjection(),
-                        ozv, false, TaskPointRenderer::NONE,
+                        ozv, false,
+                        TaskPointRenderer::TargetVisibility::NONE,
                         location);
   TaskRenderer dv(tpv, projection.GetScreenBounds());
   dv.Draw(task);
@@ -189,7 +190,7 @@ PaintTask(Canvas &canvas, const PixelRect &rc, const OrderedTask &task,
     return;
   }
 
-  ChartProjection projection(rc, task);
+  ChartProjection projection(rc, task.GetTaskProjection(), 1);
   PaintTask(canvas, projection, task, location,
             settings_map,
             task_look, airspace_look, terrain, airspaces,

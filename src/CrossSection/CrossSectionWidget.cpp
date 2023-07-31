@@ -6,8 +6,9 @@
 #include "UIGlobals.hpp"
 #include "Look/Look.hpp"
 #include "Interface.hpp"
-#include "Components.hpp"
-#include "util/Clamp.hpp"
+#include "DataComponents.hpp"
+
+#include <algorithm> // for std::clamp()
 
 void
 CrossSectionWidget::Update(const MoreData &basic,
@@ -24,8 +25,8 @@ CrossSectionWidget::Update(const MoreData &basic,
   if (basic.location_available && basic.track_available) {
     w.SetStart(basic.location);
     w.SetDirection(basic.track);
-    w.SetRange(Clamp(double(w.GetSize().width) / settings.cruise_scale,
-                     5000., 200000.));
+    w.SetRange(std::clamp(double(w.GetSize().width) / settings.cruise_scale,
+                          5000., 200000.));
   } else
     w.SetInvalid();
 
@@ -46,8 +47,8 @@ CrossSectionWidget::Prepare(ContainerWindow &parent,
     std::make_unique<CrossSectionWindow>(look.cross_section,
                                          look.map.airspace,
                                          look.chart, look.info_box);
-  w->SetAirspaces(&airspace_database);
-  w->SetTerrain(terrain);
+  w->SetAirspaces(data_components.airspaces.get());
+  w->SetTerrain(data_components.terrain.get());
   w->Create(parent, rc, style);
 
   SetWindow(std::move(w));

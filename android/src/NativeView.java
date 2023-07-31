@@ -45,6 +45,8 @@ class NativeView extends SurfaceView
    */
   private long ptr;
 
+  final PermissionManager permissionManager;
+
   final Handler quitHandler, wakelockhandler, fullScreenHandler, errorHandler;
 
   Resources resources;
@@ -62,13 +64,15 @@ class NativeView extends SurfaceView
   public NativeView(Activity context, Handler _quitHandler,
                     Handler _wakeLockHandler,
                     Handler _fullScreenHandler,
-                    Handler _errorHandler) {
+                    Handler _errorHandler,
+                    PermissionManager permissionManager) {
     super(context);
 
     quitHandler = _quitHandler;
     wakelockhandler = _wakeLockHandler;
     fullScreenHandler = _fullScreenHandler;
     errorHandler = _errorHandler;
+    this.permissionManager = permissionManager;
 
     resources = context.getResources();
 
@@ -142,7 +146,7 @@ class NativeView extends SurfaceView
 
     try {
       try {
-        context.startService(new Intent(context, XCSoar.serviceClass));
+        context.startService(new Intent(context, MyService.class));
       } catch (IllegalStateException e) {
         /* we get crash reports on this all the time, but I don't
            know why - Android docs say "the application is in a
@@ -153,11 +157,12 @@ class NativeView extends SurfaceView
       }
 
       try {
-        runNative(context, r.width(), r.height(),
+        runNative(context, permissionManager,
+                  r.width(), r.height(),
                   (int)metrics.xdpi, (int)metrics.ydpi,
-                  Build.VERSION.SDK_INT, Build.PRODUCT);
+                  Build.PRODUCT);
       } finally {
-        context.stopService(new Intent(context, XCSoar.serviceClass));
+        context.stopService(new Intent(context, MyService.class));
       }
     } catch (Exception e) {
       Log.e(TAG, "Initialisation error", e);
@@ -168,10 +173,18 @@ class NativeView extends SurfaceView
     quitHandler.sendEmptyMessage(0);
   }
 
+  static native void initNative();
+  static native void deinitNative();
+
+  static native void onConfigurationChangedNative(boolean nightMode);
+
+  static native String onReceiveXCTrackTask(String data);
+
   protected native void runNative(Context context,
+                                  PermissionManager permissionManager,
                                   int width, int height,
                                   int xdpi, int ydpi,
-                                  int sdk_version, String product);
+                                  String product);
 
   protected native void resizedNative(int width, int height);
 

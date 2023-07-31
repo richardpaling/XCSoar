@@ -6,6 +6,7 @@
 #include "Look/MapLook.hpp"
 #include "Interface.hpp"
 #include "Components.hpp"
+#include "DataComponents.hpp"
 
 #ifdef ENABLE_OPENGL
 #include "ui/canvas/opengl/Scope.hpp"
@@ -17,10 +18,11 @@ DrawTask(Canvas &canvas, const PixelRect rc,
 {
   const NMEAInfo &basic = CommonInterface::Basic();
   PaintTask(canvas, rc, task,
-            basic.location_available ? basic.location : GeoPoint::Invalid(),
+            basic.GetLocationOrInvalid(),
             CommonInterface::GetMapSettings(),
             look.task, look.airspace, look.overlay,
-            terrain, &airspace_database,
+            data_components->terrain.get(),
+            data_components->airspaces.get(),
             true);
 }
 

@@ -8,15 +8,16 @@
 #include "Blackboard/DeviceBlackboard.hpp"
 #include "Components.hpp"
 #include "java/Array.hxx"
+#include "java/Class.hxx"
 #include "java/Env.hxx"
 
-Java::TrivialClass InternalSensors::gps_cls, InternalSensors::sensors_cls;
-jmethodID InternalSensors::gps_ctor_id;
-jmethodID InternalSensors::sensors_ctor_id;
-jmethodID InternalSensors::mid_sensors_getSubscribableSensors;
-jmethodID InternalSensors::mid_sensors_subscribeToSensor_;
-jmethodID InternalSensors::mid_sensors_cancelSensorSubscription_;
-jmethodID InternalSensors::mid_sensors_subscribedToSensor_;
+static Java::TrivialClass gps_cls, sensors_cls;
+static jmethodID gps_ctor_id;
+static jmethodID sensors_ctor_id;
+static jmethodID mid_sensors_getSubscribableSensors;
+static jmethodID mid_sensors_subscribeToSensor_;
+static jmethodID mid_sensors_cancelSensorSubscription_;
+static jmethodID mid_sensors_subscribedToSensor_;
 
 bool
 InternalSensors::Initialise(JNIEnv *env)
@@ -28,7 +29,9 @@ InternalSensors::Initialise(JNIEnv *env)
   gps_cls.Find(env, "org/xcsoar/InternalGPS");
 
   gps_ctor_id = env->GetMethodID(gps_cls, "<init>",
-                                 "(Landroid/content/Context;Lorg/xcsoar/SensorListener;)V");
+                                 "(Landroid/content/Context;"
+                                 "Lorg/xcsoar/PermissionManager;"
+                                 "Lorg/xcsoar/SensorListener;)V");
 
   sensors_cls.Find(env, "org/xcsoar/NonGPSSensors");
 
@@ -53,7 +56,7 @@ InternalSensors::Initialise(JNIEnv *env)
 }
 
 void
-InternalSensors::Deinitialise(JNIEnv *env)
+InternalSensors::Deinitialise(JNIEnv *env) noexcept
 {
   gps_cls.Clear(env);
   sensors_cls.Clear(env);
@@ -69,32 +72,30 @@ InternalSensors::InternalSensors(const Java::LocalObject &gps_obj,
 }
 
 bool
-InternalSensors::subscribeToSensor(int id)
+InternalSensors::SubscribeToSensor(JNIEnv *env, int id) noexcept
 {
-  JNIEnv *env = Java::GetEnv();
   return env->CallBooleanMethod(obj_NonGPSSensors_.Get(),
                                 mid_sensors_subscribeToSensor_, (jint) id);
 }
 
 bool
-InternalSensors::cancelSensorSubscription(int id)
+InternalSensors::CancelSensorSubscription(JNIEnv *env, int id) noexcept
 {
-  JNIEnv *env = Java::GetEnv();
   return env->CallBooleanMethod(obj_NonGPSSensors_.Get(),
                                 mid_sensors_cancelSensorSubscription_,
                                 (jint)id);
 }
 
 bool
-InternalSensors::subscribedToSensor(int id) const
+InternalSensors::IsSubscribedToSensor(JNIEnv *env, int id) const noexcept
 {
-  JNIEnv *env = Java::GetEnv();
   return env->CallBooleanMethod(obj_NonGPSSensors_.Get(),
                                 mid_sensors_subscribedToSensor_, (jint)id);
 }
 
 InternalSensors *
-InternalSensors::create(JNIEnv *env, Context *context,
+InternalSensors::Create(JNIEnv *env, Context *context,
+                        jobject permission_manager,
                         SensorListener &_listener)
 {
   assert(sensors_cls != nullptr);
@@ -104,7 +105,9 @@ InternalSensors::create(JNIEnv *env, Context *context,
 
   // Construct InternalGPS object.
   auto gps_obj = Java::NewObjectRethrow(env, gps_cls, gps_ctor_id,
-                                        context->Get(), listener.Get());
+                                        context->Get(),
+                                        permission_manager,
+                                        listener.Get());
   assert(gps_obj != nullptr);
 
   // Construct NonGPSSensors object.
@@ -118,7 +121,8 @@ InternalSensors::create(JNIEnv *env, Context *context,
 
 // Helper for retrieving the set of sensors to which we can subscribe.
 void
-InternalSensors::getSubscribableSensors(JNIEnv *env, [[maybe_unused]] jobject sensors_obj)
+InternalSensors::getSubscribableSensors(JNIEnv *env,
+                                        [[maybe_unused]] jobject sensors_obj) noexcept
 {
   jintArray ss_arr = (jintArray)
     env->CallObjectMethod(obj_NonGPSSensors_.Get(),

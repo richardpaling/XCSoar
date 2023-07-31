@@ -30,10 +30,14 @@
 #include "Widget/VScrollWidget.hpp"
 #include "Interface.hpp"
 #include "Language/Language.hpp"
+#include "DataComponents.hpp"
 
-TaskManagerDialog::TaskManagerDialog(WndForm &_dialog) noexcept
+inline
+TaskManagerDialog::TaskManagerDialog(WndForm &_dialog,
+                                     std::unique_ptr<OrderedTask> &&_task) noexcept
     :TabWidget(Orientation::AUTO),
-     dialog(_dialog) {}
+     dialog(_dialog),
+     task(std::move(_task)) {}
 
 TaskManagerDialog::~TaskManagerDialog() noexcept = default;
 
@@ -51,7 +55,7 @@ TaskManagerDialog::KeyPress(unsigned key_code) noexcept
 
     if (GetCurrentIndex() != 3) {
       /* switch to "close" page instead of closing the dialog */
-      SetCurrent(3);
+      SetCurrent(CloseTab);
       SetFocus();
       return true;
     }
@@ -75,7 +79,10 @@ void
 TaskManagerDialog::Initialise(ContainerWindow &parent,
                               const PixelRect &rc) noexcept
 {
-  task = protected_task_manager->TaskClone();
+  if (!task) {
+    task = protected_task_manager->TaskClone();
+    modified = false;
+  }
 
   /* create the controls */
 
@@ -181,8 +188,8 @@ TaskManagerDialog::Commit()
     { // this must be done in thread lock because it potentially changes the
       // waypoints database
       ScopeSuspendAllThreads suspend;
-      task->CheckDuplicateWaypoints(way_points);
-      way_points.Optimise();
+      task->CheckDuplicateWaypoints(*data_components->waypoints);
+      data_components->waypoints->Optimise();
     }
 
     protected_task_manager->TaskCommit(*task);
@@ -225,7 +232,7 @@ TaskManagerDialog::Revert()
 }
 
 void
-dlgTaskManagerShowModal()
+dlgTaskManagerShowModal(std::unique_ptr<OrderedTask> task)
 {
   if (protected_task_manager == nullptr)
     return;
@@ -234,6 +241,12 @@ dlgTaskManagerShowModal()
   TWidgetDialog<TaskManagerDialog>
     dialog(WidgetDialog::Full{}, UIGlobals::GetMainWindow(),
            look, _("Task Manager"));
-  dialog.SetWidget(dialog);
+  dialog.SetWidget(dialog, std::move(task));
   dialog.ShowModal();
+}
+
+void
+dlgTaskManagerShowModal()
+{
+  dlgTaskManagerShowModal({});
 }

@@ -4,7 +4,6 @@
 #include "Terrain/RasterRenderer.hpp"
 #include "Terrain/RasterMap.hpp"
 #include "Math/Constants.hpp"
-#include "util/Clamp.hpp"
 #include "Screen/Layout.hpp"
 #include "ui/canvas/Ramp.hpp"
 #include "ui/canvas/Color.hpp"
@@ -13,6 +12,7 @@
 #include "Projection/WindowProjection.hpp"
 #include "ui/event/Idle.hpp"
 
+#include <algorithm> // for std::clamp()
 #include <cassert>
 #include <cstdint>
 
@@ -69,7 +69,10 @@ ContourInterval(unsigned h, unsigned contour_height_scale) noexcept
 static unsigned
 ContourInterval(const TerrainHeight h, const unsigned contour_height_scale)
 {
-  if (gcc_unlikely(h.IsSpecial()) || h.GetValue() <= 0)
+  if (h.IsSpecial()) [[unlikely]]
+    return 0;
+
+  if (h.GetValue() <= 0)
     return 0;
 
   return ContourInterval(h.GetValue(), contour_height_scale);
@@ -219,16 +222,15 @@ RasterRenderer::GenerateUnshadedImage(const unsigned height_scale,
 
     for (unsigned x = height_matrix.GetSize().x; x > 0; --x) {
       const auto e = *src++;
-      if (gcc_likely(!e.IsSpecial())) {
+      if (!e.IsSpecial()) [[likely]] {
         unsigned h = std::max(0, (int)e.GetValue());
 
         const unsigned contour_interval =
           ContourInterval(h, contour_height_scale);
 
         h = std::min(254u, h >> height_scale);
-        if (gcc_unlikely((contour_interval != contour_row_base)
-                         || (contour_interval != *contour_this_column_base))) {
-
+        if (contour_interval != contour_row_base ||
+            contour_interval != *contour_this_column_base) [[unlikely]] {
           *p++ = oColorBuf[(int)h - 64 * 256];
           *contour_this_column_base = contour_row_base = contour_interval;
         } else {
@@ -256,7 +258,7 @@ RasterRenderer::GenerateUnshadedImage(const unsigned height_scale,
 static constexpr int
 ClipHeightDelta(int d) noexcept
 {
-  return Clamp(d, -512, 512);
+  return std::clamp(d, -512, 512);
 }
 
 static constexpr int
@@ -282,12 +284,12 @@ RasterRenderer::GenerateSlopeImage(unsigned height_scale,
     .WithPadding(quantisation_effective);
 
   const unsigned height_slope_factor =
-    Clamp((unsigned)pixel_size, 1u,
-          /* this upper limit avoids integer overflows in the "mag"
-             formula; it effectively limits "dd2" so calculating its
-             square will not overflow */
-          8192u / (quantisation_effective * quantisation_effective));
-
+    std::clamp((unsigned)pixel_size, 1u,
+               /* this upper limit avoids integer overflows in the
+                  "mag" formula; it effectively limits "dd2" so
+                  calculating its square will not overflow */
+               8192u / (quantisation_effective * quantisation_effective));
+  
   const auto *src = height_matrix.GetData();
   const RawColor *oColorBuf = color_table + 64 * 256;
 
@@ -313,7 +315,7 @@ RasterRenderer::GenerateSlopeImage(unsigned height_scale,
 
     for (unsigned x = 0; x < height_matrix.GetSize().x; ++x, ++src) {
       const auto e = *src;
-      if (gcc_likely(!e.IsSpecial())) {
+      if (!e.IsSpecial()) [[likely]] {
         unsigned h = std::max(0, (int)e.GetValue());
 
         const unsigned contour_interval =
@@ -347,10 +349,8 @@ RasterRenderer::GenerateSlopeImage(unsigned height_scale,
         const auto h_left = src[-(int)column_minus_index];
         const auto h_right = src[column_plus_index];
 
-        if (gcc_unlikely(h_above.IsSpecial() ||
-                         h_below.IsSpecial() ||
-                         h_left.IsSpecial() ||
-                         h_right.IsSpecial())) {
+        if (h_above.IsSpecial() || h_below.IsSpecial() ||
+            h_left.IsSpecial() || h_right.IsSpecial()) [[unlikely]] {
           /* some "special" terrain value surrounding us (water or
              invalid), skip slope calculation */
           *p++ = oColorBuf[h];
@@ -358,8 +358,8 @@ RasterRenderer::GenerateSlopeImage(unsigned height_scale,
           continue;
         }
 
-        if (gcc_unlikely((contour_interval != contour_row_base)
-                         || (contour_interval != *contour_this_column_base))) {
+        if (contour_interval != contour_row_base ||
+            contour_interval != *contour_this_column_base) [[unlikely]] {
 
           *contour_this_column_base++ = contour_row_base = contour_interval;
           *p++ = oColorBuf[int(h) - 64 * 256];
@@ -384,7 +384,7 @@ RasterRenderer::GenerateSlopeImage(unsigned height_scale,
         /* TODO: debug this problem and replace this workaround */
         const int sval = num / int(mag|1);
         const int sindex = (sval - sz) * contrast / 128;
-        *p++ = oColorBuf[int(h) + 256 * Clamp(sindex, -63, 63)];
+        *p++ = oColorBuf[int(h) + 256 * std::clamp(sindex, -63, 63)];
       } else if (e.IsWater()) {
         // we're in the water, so look up the color for water
         *p++ = oColorBuf[255];

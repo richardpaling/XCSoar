@@ -9,7 +9,7 @@
 #include "co/InvokeTask.hxx"
 #include "Dialogs/Error.hpp"
 #include "Dialogs/Message.hpp"
-#include "Dialogs/CoDialog.hpp"
+#include "Dialogs/CoFunctionDialog.hpp"
 #include "Formatter/TimeFormatter.hpp"
 #include "json/ParserOutputStream.hxx"
 #include "Language/Language.hpp"
@@ -97,17 +97,6 @@ UploadSuccessDialog(const FlightData &flight_data) noexcept
   ShowMessageBox(display_string.c_str(), _("WeGlide Upload"), MB_OK);
 }
 
-struct CoInstance {
-  boost::json::value value;
-  Co::InvokeTask
-  UpdateTask(Path igc_path, const WeGlideSettings &settings,
-    uint_least32_t glider_id, ProgressListener &progress)
-  {
-    value = co_await UploadFlight(*Net::curl, settings, glider_id,
-      igc_path, progress);
-  }
-};
-
 static FlightData
 UploadFile(Path igc_path)
 {
@@ -116,15 +105,17 @@ UploadFile(Path igc_path)
     .weglide_glider_type;
 
   PluggableOperationEnvironment env;
-  CoInstance instance;
-  if (ShowCoDialog(UIGlobals::GetMainWindow(), UIGlobals::GetDialogLook(),
-                   _("Upload Flight"), instance.UpdateTask(igc_path, settings,
-                                                           glider_id, env), &env) == false) {
+
+  auto value = ShowCoFunctionDialog(UIGlobals::GetMainWindow(), UIGlobals::GetDialogLook(),
+                                    _("Upload Flight"),
+                                    UploadFlight(*Net::curl, settings, glider_id,
+                                                 igc_path, env),
+                                    &env);
+  if (!value)
     return {};
-  }
 
   // read the important data from json in a structure
-  return UploadJsonInterpreter(instance.value);
+  return UploadJsonInterpreter(*value);
 }
 
 bool

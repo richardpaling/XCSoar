@@ -3,7 +3,17 @@
 
 #pragma once
 
+#include <memory>
+
 class OrderedTask;
+class Waypoints;
+
+/**
+ * @param task if set, load this task into the dialog; if not set,
+ * show the current task
+ */
+void
+dlgTaskManagerShowModal(std::unique_ptr<OrderedTask> task);
 
 void
 dlgTaskManagerShowModal();
@@ -27,7 +37,7 @@ bool
 dlgTaskPointType(OrderedTask &task, unsigned index);
 
 bool
-dlgTaskOptionalStarts(OrderedTask &task);
+dlgTaskOptionalStarts(Waypoints &waypoints, OrderedTask &task);
 
 /**
  * Shows map display zoomed to target point
@@ -40,4 +50,4 @@ void
 dlgTargetShowModal(int TargetPoint = -1);
 
 void
-dlgAlternatesListShowModal();
+dlgAlternatesListShowModal(Waypoints *waypoints) noexcept;

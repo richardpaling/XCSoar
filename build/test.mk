@@ -77,6 +77,7 @@ TEST_NAMES = \
 	test_task \
 	TestOverwritingRingBuffer \
 	TestDateTime TestRoughTime TestWrapClock \
+	TestPolylineDecoder \
 	TestTransponderCode \
 	TestMath \
 	TestMathTables \
@@ -195,6 +196,13 @@ TEST_DATE_TIME_SOURCES = \
 TEST_DATE_TIME_DEPENDS = MATH TIME
 $(eval $(call link-program,TestDateTime,TEST_DATE_TIME))
 
+TEST_POLYLINE_DECODER_SOURCES = \
+	$(SRC)/Task/PolylineDecoder.cpp \
+	$(TEST_SRC_DIR)/tap.c \
+	$(TEST_SRC_DIR)/TestPolylineDecoder.cpp
+TEST_POLYLINE_DECODER_DEPENDS = GEO UTIL
+$(eval $(call link-program,TestPolylineDecoder,TEST_POLYLINE_DECODER))
+
 TEST_TRANSPONDER_CODE_SOURCES = \
 	$(SRC)/TransponderCode.cpp \
 	$(TEST_SRC_DIR)/tap.c \
@@ -287,7 +295,6 @@ TEST_TEAM_CODE_DEPENDS = GEO MATH UTIL
 $(eval $(call link-program,TestTeamCode,TEST_TEAM_CODE))
 
 TEST_TROUTE_SOURCES = \
-	$(SRC)/XML/Node.cpp \
 	$(TEST_SRC_DIR)/Printing.cpp \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/test_troute.cpp
@@ -295,7 +302,6 @@ TEST_TROUTE_DEPENDS = TERRAIN OPERATION IO ZZIP OS ROUTE GLIDE GEO MATH UTIL
 $(eval $(call link-program,test_troute,TEST_TROUTE))
 
 TEST_REACH_SOURCES = \
-	$(SRC)/XML/Node.cpp \
 	$(TEST_SRC_DIR)/Printing.cpp \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/test_reach.cpp
@@ -306,7 +312,6 @@ TEST_ROUTE_SOURCES = \
 	$(SRC)/Engine/Navigation/Aircraft.cpp \
 	$(SRC)/Engine/Util/Gradient.cpp \
 	$(SRC)/NMEA/FlyingState.cpp \
-	$(SRC)/XML/Node.cpp \
 	$(SRC)/Formatter/AirspaceFormatter.cpp \
 	$(SRC)/Atmosphere/Pressure.cpp \
 	$(TEST_SRC_DIR)/Printing.cpp \
@@ -322,13 +327,6 @@ TEST_REPLAY_TASK_SOURCES = \
 	$(SRC)/Engine/Navigation/Aircraft.cpp \
 	$(SRC)/Engine/Util/Gradient.cpp \
 	$(SRC)/NMEA/FlyingState.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
-	$(SRC)/Task/LoadFile.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(SRC)/Atmosphere/AirDensity.cpp \
 	$(SRC)/Atmosphere/Pressure.cpp \
 	$(SRC)/IGC/IGCParser.cpp \
@@ -343,7 +341,7 @@ TEST_REPLAY_TASK_SOURCES = \
 	$(TEST_SRC_DIR)/harness_task.cpp \
 	$(TEST_SRC_DIR)/test_debug.cpp \
 	$(TEST_SRC_DIR)/test_replay_task.cpp
-TEST_REPLAY_TASK_DEPENDS = TASK ROUTE WAYPOINT GLIDE LIBNMEA GEO MATH IO OS UTIL TIME
+TEST_REPLAY_TASK_DEPENDS = TASKFILE ROUTE WAYPOINT GLIDE LIBNMEA GEO MATH IO OS UTIL TIME
 $(eval $(call link-program,test_replay_task,TEST_REPLAY_TASK))
 
 TEST_MATH_TABLES_SOURCES = \
@@ -511,7 +509,6 @@ TEST_POLARS_SOURCES = \
 	$(SRC)/Polar/Shape.cpp \
 	$(SRC)/Polar/Polar.cpp \
 	$(SRC)/Polar/Parser.cpp \
-	$(ENGINE_SRC_DIR)/GlideSolvers/PolarCoefficients.cpp \
 	$(ENGINE_SRC_DIR)/GlideSolvers/GlidePolar.cpp \
 	$(ENGINE_SRC_DIR)/GlideSolvers/GlideResult.cpp \
 	$(SRC)/Polar/PolarFileGlue.cpp \
@@ -523,7 +520,6 @@ $(eval $(call link-program,TestPolars,TEST_POLARS))
 
 TEST_GLIDE_POLAR_SOURCES = \
 	$(ENGINE_SRC_DIR)/GlideSolvers/GlidePolar.cpp \
-	$(ENGINE_SRC_DIR)/GlideSolvers/PolarCoefficients.cpp \
 	$(ENGINE_SRC_DIR)/GlideSolvers/GlideResult.cpp \
 	$(ENGINE_SRC_DIR)/GlideSolvers/GlideState.cpp \
 	$(ENGINE_SRC_DIR)/GlideSolvers/MacCready.cpp \
@@ -817,8 +813,7 @@ ifeq ($(HAVE_HTTP)$(TARGET_IS_ANDROID),yn)
 DEBUG_PROGRAM_NAMES += DownloadFile \
 	RunDownloadToFile \
 	UploadFile \
-	RunWeGlideUploadFlight \
-	RunWeGlideDownloadTask \
+	RunWeGlideClient \
 	RunTimClient \
 	RunNOAADownloader RunSkyLinesTracking RunLiveTrack24
 endif
@@ -875,7 +870,6 @@ DEBUG_REPLAY_SOURCES = \
 	$(SRC)/Atmosphere/Pressure.cpp \
 	$(SRC)/Engine/Navigation/Aircraft.cpp \
 	$(SRC)/Engine/GlideSolvers/GlidePolar.cpp \
-	$(SRC)/Engine/GlideSolvers/PolarCoefficients.cpp \
 	$(SRC)/Engine/GlideSolvers/GlideResult.cpp \
 	$(SRC)/Engine/Route/Config.cpp \
 	$(SRC)/Engine/Task/Stats/TaskStats.cpp \
@@ -969,31 +963,15 @@ RUN_TIM_CLIENT_SOURCES = \
 RUN_TIM_CLIENT_DEPENDS = LIBCLIENT JSON LIBHTTP ASYNC OS LIBNET IO UTIL
 $(eval $(call link-program,RunTimClient,RUN_TIM_CLIENT))
 
-RUN_WEGLIDE_UPLOAD_FLIGHT_SOURCES = \
+RUN_WEGLIDE_CLIENT_SOURCES = \
 	$(SRC)/Version.cpp \
 	$(SRC)/Operation/ConsoleOperationEnvironment.cpp \
 	$(SRC)/Formatter/TimeFormatter.cpp \
-	$(SRC)/net/SocketError.cxx \
-	$(TEST_SRC_DIR)/FakeLogFile.cpp \
-	$(TEST_SRC_DIR)/RunWeGlideUploadFlight.cpp
-RUN_WEGLIDE_UPLOAD_FLIGHT_DEPENDS = LIBCLIENT JSON LIBHTTP ASYNC LIBNET OPERATION IO OS UTIL TIME
-$(eval $(call link-program,RunWeGlideUploadFlight,RUN_WEGLIDE_UPLOAD_FLIGHT))
-
-RUN_WEGLIDE_DOWNLOAD_TASK_SOURCES = \
-	$(SRC)/Version.cpp \
-	$(SRC)/Operation/ConsoleOperationEnvironment.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
-	$(SRC)/Task/Serialiser.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
 	$(SRC)/Engine/Util/Gradient.cpp \
 	$(SRC)/net/SocketError.cxx \
-	$(TEST_SRC_DIR)/RunWeGlideDownloadTask.cpp
-RUN_WEGLIDE_DOWNLOAD_TASK_DEPENDS = LIBCLIENT JSON TASK ROUTE GLIDE WAYPOINT GEO TIME MATH LIBHTTP ASYNC LIBNET OPERATION IO OS UTIL FMT
-$(eval $(call link-program,RunWeGlideDownloadTask,RUN_WEGLIDE_DOWNLOAD_TASK))
+	$(TEST_SRC_DIR)/RunWeGlideClient.cpp
+RUN_WEGLIDE_CLIENT_DEPENDS = LIBCLIENT JSON TASKFILE ROUTE GLIDE WAYPOINT GEO TIME MATH LIBHTTP ASYNC LIBNET OPERATION IO OS UTIL FMT
+$(eval $(call link-program,RunWeGlideClient,RUN_WEGLIDE_CLIENT))
 
 RUN_NOAA_DOWNLOADER_SOURCES = \
 	$(SRC)/net/SocketError.cxx \
@@ -1057,11 +1035,8 @@ RUN_REPOSITORY_PARSER_DEPENDS = LIBNET IO OS UTIL
 $(eval $(call link-program,RunRepositoryParser,RUN_REPOSITORY_PARSER))
 
 RUN_XML_PARSER_SOURCES = \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
 	$(TEST_SRC_DIR)/RunXMLParser.cpp
-RUN_XML_PARSER_DEPENDS = IO OS UTIL
+RUN_XML_PARSER_DEPENDS = XML
 $(eval $(call link-program,RunXMLParser,RUN_XML_PARSER))
 
 READ_MO_SOURCES = \
@@ -1596,27 +1571,16 @@ RUN_TASK_SOURCES = \
 	$(SRC)/Formatter/TimeFormatter.cpp \
 	$(SRC)/Formatter/NMEAFormatter.cpp \
 	$(SRC)/NMEA/Aircraft.cpp \
-	$(SRC)/Task/TaskFile.cpp \
-	$(SRC)/Task/TaskFileXCSoar.cpp \
-	$(SRC)/Task/TaskFileSeeYou.cpp \
-	$(SRC)/Task/TaskFileIGC.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
-	$(SRC)/Task/LoadFile.cpp \
 	$(SRC)/Waypoint/WaypointReaderBase.cpp \
 	$(SRC)/Waypoint/WaypointReaderSeeYou.cpp \
 	$(SRC)/Waypoint/Factory.cpp \
 	$(SRC)/RadioFrequency.cpp \
 	$(SRC)/TransponderCode.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(SRC)/Engine/Util/Gradient.cpp \
 	$(DEBUG_REPLAY_SOURCES) \
 	$(TEST_SRC_DIR)/FakeTerrain.cpp \
 	$(TEST_SRC_DIR)/RunTask.cpp
-RUN_TASK_DEPENDS = $(DEBUG_REPLAY_DEPENDS) TASK WAYPOINT GLIDE GEO MATH UTIL IO TIME
+RUN_TASK_DEPENDS = $(DEBUG_REPLAY_DEPENDS) TASKFILE WAYPOINT GLIDE GEO MATH UTIL IO TIME
 $(eval $(call link-program,RunTask,RUN_TASK))
 
 RUN_TRACE_SOURCES = \
@@ -1838,11 +1802,6 @@ RUN_MAP_WINDOW_SOURCES = \
 	$(SRC)/Waypoint/WaypointReaderCompeGPS.cpp \
 	$(SRC)/Waypoint/Factory.cpp \
 	$(SRC)/Compatibility/fmode.c \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(SRC)/RadioFrequency.cpp \
 	$(SRC)/Atmosphere/Pressure.cpp \
 	$(SRC)/Atmosphere/AirDensity.cpp \
@@ -1916,8 +1875,6 @@ RUN_NUMBER_ENTRY_SOURCES = \
 	$(SRC)/Look/DialogLook.cpp \
 	$(SRC)/Look/ButtonLook.cpp \
 	$(SRC)/Look/CheckBoxLook.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
 	$(SRC)/Units/Descriptor.cpp \
 	$(SRC)/Formatter/HexColor.cpp \
 	$(TEST_SRC_DIR)/Fonts.cpp \
@@ -2168,17 +2125,10 @@ RUN_ANALYSIS_SOURCES = \
 	$(SRC)/Engine/Trace/Vector.cpp \
 	$(ENGINE_SRC_DIR)/ThermalBand/ThermalBand.cpp \
 	$(SRC)/UIUtil/GestureManager.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
-	$(SRC)/Task/LoadFile.cpp \
 	$(SRC)/Task/DefaultTask.cpp \
 	$(SRC)/Task/ProtectedTaskManager.cpp \
 	$(SRC)/Task/ProtectedRoutePlanner.cpp \
 	$(SRC)/Task/RoutePlannerGlue.cpp \
-	$(SRC)/Task/TaskFile.cpp \
-	$(SRC)/Task/TaskFileXCSoar.cpp \
-	$(SRC)/Task/TaskFileSeeYou.cpp \
-	$(SRC)/Task/TaskFileIGC.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
 	$(SRC)/Waypoint/WaypointReaderBase.cpp \
 	$(SRC)/Waypoint/WaypointReaderSeeYou.cpp \
 	$(SRC)/Waypoint/Factory.cpp \
@@ -2194,6 +2144,13 @@ RUN_ANALYSIS_SOURCES = \
 	$(SRC)/Projection/WindowProjection.cpp \
 	$(SRC)/Projection/MapWindowProjection.cpp \
 	$(SRC)/Projection/ChartProjection.cpp \
+	$(SRC)/Projection/CompareProjection.cpp \
+	$(SRC)/Renderer/BackgroundRenderer.cpp \
+	$(SRC)/Renderer/GeoBitmapRenderer.cpp \
+	$(SRC)/Renderer/AirspaceRenderer.cpp \
+	$(SRC)/Renderer/AirspaceRendererGL.cpp \
+	$(SRC)/Renderer/AirspaceRendererOther.cpp \
+	$(SRC)/Renderer/TransparentRendererCache.cpp \
 	$(SRC)/Renderer/GradientRenderer.cpp \
 	$(SRC)/Renderer/ChartRenderer.cpp \
 	$(SRC)/Renderer/TaskRenderer.cpp \
@@ -2202,6 +2159,7 @@ RUN_ANALYSIS_SOURCES = \
 	$(SRC)/Renderer/AircraftRenderer.cpp \
 	$(SRC)/Renderer/TrailRenderer.cpp \
 	$(SRC)/MapWindow/MapCanvas.cpp \
+	$(SRC)/MapWindow/StencilMapCanvas.cpp \
 	$(SRC)/Units/Units.cpp \
 	$(SRC)/Units/Settings.cpp \
 	$(SRC)/Units/Temperature.cpp \
@@ -2214,10 +2172,6 @@ RUN_ANALYSIS_SOURCES = \
 	$(SRC)/LocalPath.cpp \
 	$(MORE_SCREEN_SOURCES) \
 	$(SRC)/Profile/Profile.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(SRC)/Dialogs/WidgetDialog.cpp \
 	$(SRC)/Dialogs/dlgAnalysis.cpp \
 	$(SRC)/Dialogs/DialogSettings.cpp \
@@ -2284,14 +2238,12 @@ RUN_ANALYSIS_DEPENDS = \
 	OPERATION \
 	SCREEN EVENT RESOURCE LIBCOMPUTER LIBNMEA ASYNC IO DATA_FIELD \
 	OS THREAD \
-	CONTEST TASK ROUTE GLIDE WAYPOINT ROUTE AIRSPACE ZZIP UTIL GEO MATH TIME
+	CONTEST TASKFILE ROUTE GLIDE WAYPOINT ROUTE AIRSPACE ZZIP UTIL GEO MATH TIME
 $(eval $(call link-program,RunAnalysis,RUN_ANALYSIS))
 
 RUN_AIRSPACE_WARNING_DIALOG_SOURCES = \
 	$(SRC)/Engine/Navigation/Aircraft.cpp \
 	$(SRC)/NMEA/FlyingState.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
 	$(SRC)/Airspace/ProtectedAirspaceWarningManager.cpp \
 	$(SRC)/Units/Units.cpp \
 	$(SRC)/Units/Settings.cpp \
@@ -2386,7 +2338,6 @@ DUMP_VARIO_DEPENDS = $(DEBUG_REPLAY_DEPENDS) AUDIO GEO MATH SCREEN EVENT UTIL OS
 $(eval $(call link-program,DumpVario,DUMP_VARIO))
 
 RUN_TASK_EDITOR_DIALOG_SOURCES = \
-	$(SRC)/XML/Node.cpp \
 	$(SRC)/Airspace/ProtectedAirspaceWarningManager.cpp \
 	$(SRC)/Dialogs/Inflate.cpp \
 	$(SRC)/Dialogs/ComboPicker.cpp \
@@ -2399,10 +2350,6 @@ RUN_TASK_EDITOR_DIALOG_SOURCES = \
 	$(SRC)/Airspace/AirspaceParser.cpp \
 	$(MORE_SCREEN_SOURCES) \
 	$(SRC)/Look/GlobalFonts.cpp \
-	$(SRC)/Task/TaskFile.cpp \
-	$(SRC)/Task/TaskFileXCSoar.cpp \
-	$(SRC)/Task/TaskFileIGC.cpp \
-	$(SRC)/Task/TaskFileSeeYou.cpp \
 	$(SRC)/Task/ProtectedTaskManager.cpp \
 	$(SRC)/LocalPath.cpp \
 	$(SRC)/UtilsFont.cpp \
@@ -2429,7 +2376,7 @@ RUN_TASK_EDITOR_DIALOG_SOURCES = \
 	$(TEST_SRC_DIR)/FakeTerrain.cpp \
 	$(TEST_SRC_DIR)/RunTaskEditorDialog.cpp
 RUN_TASK_EDITOR_DIALOG_LDADD = $(FAKE_LIBS)
-RUN_TASK_EDITOR_DIALOG_DEPENDS = OPERATION FORM WIDGET DATA_FIELD SCREEN EVENT RESOURCE IO OS THREAD ZZIP UTIL GEO
+RUN_TASK_EDITOR_DIALOG_DEPENDS = TASKFILE OPERATION FORM WIDGET DATA_FIELD SCREEN EVENT RESOURCE IO OS THREAD ZZIP UTIL GEO
 $(eval $(call link-program,RunTaskEditorDialog,RUN_TASK_EDITOR_DIALOG))
 
 TEST_NOTIFY_SOURCES = \
@@ -2502,36 +2449,17 @@ $(eval $(call link-program,FeedFlyNetData,FEED_FLYNET_DATA))
 
 TASK_INFO_SOURCES = \
 	$(SRC)/Engine/Util/Gradient.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
-	$(SRC)/Task/LoadFile.cpp \
 	$(SRC)/Task/ValidationErrorStrings.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(TEST_SRC_DIR)/FakeLanguage.cpp \
 	$(TEST_SRC_DIR)/TaskInfo.cpp
-TASK_INFO_DEPENDS = TASK ROUTE GLIDE WAYPOINT IO OS GEO TIME MATH UTIL
+TASK_INFO_DEPENDS = TASKFILE ROUTE GLIDE WAYPOINT IO OS GEO TIME MATH UTIL
 $(eval $(call link-program,TaskInfo,TASK_INFO))
 
 DUMP_TASK_FILE_SOURCES = \
 	$(SRC)/Engine/Util/Gradient.cpp \
 	$(SRC)/Units/Descriptor.cpp \
 	$(SRC)/Units/System.cpp \
-	$(SRC)/XML/Node.cpp \
-	$(SRC)/XML/Parser.cpp \
-	$(SRC)/XML/Writer.cpp \
-	$(SRC)/XML/DataNode.cpp \
-	$(SRC)/XML/DataNodeXML.cpp \
 	$(SRC)/IGC/IGCParser.cpp \
-	$(SRC)/Task/Serialiser.cpp \
-	$(SRC)/Task/Deserialiser.cpp \
-	$(SRC)/Task/LoadFile.cpp \
-	$(SRC)/Task/TaskFile.cpp \
-	$(SRC)/Task/TaskFileXCSoar.cpp \
-	$(SRC)/Task/TaskFileIGC.cpp \
-	$(SRC)/Task/TaskFileSeeYou.cpp \
 	$(SRC)/Waypoint/WaypointReaderBase.cpp \
 	$(SRC)/Waypoint/WaypointReaderSeeYou.cpp \
 	$(SRC)/Waypoint/Factory.cpp \
@@ -2539,7 +2467,7 @@ DUMP_TASK_FILE_SOURCES = \
 	$(SRC)/Engine/Route/Config.cpp \
 	$(TEST_SRC_DIR)/FakeTerrain.cpp \
 	$(TEST_SRC_DIR)/DumpTaskFile.cpp
-DUMP_TASK_FILE_DEPENDS = TASK GLIDE WAYPOINT OPERATION IO OS THREAD ZZIP GEO TIME MATH UTIL
+DUMP_TASK_FILE_DEPENDS = TASKFILE GLIDE WAYPOINT OPERATION IO OS THREAD ZZIP GEO TIME MATH UTIL
 $(eval $(call link-program,DumpTaskFile,DUMP_TASK_FILE))
 
 DUMP_FLARM_NET_SOURCES = \

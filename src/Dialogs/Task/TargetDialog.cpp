@@ -26,7 +26,9 @@
 #include "Units/Units.hpp"
 #include "Blackboard/RateLimitedBlackboardListener.hpp"
 #include "Interface.hpp"
-#include "util/Clamp.hpp"
+#include "DataComponents.hpp"
+
+#include <algorithm> // for std::clamp()
 
 class TargetWidget;
 
@@ -113,10 +115,10 @@ public:
      delta_t(dialog_look),
      speed_remaining(dialog_look),
      speed_achieved(dialog_look) {
-    map.SetTerrain(terrain);
-    map.SetTopograpgy(topography);
-    map.SetAirspaces(&airspace_database);
-    map.SetWaypoints(&way_points);
+    map.SetTerrain(data_components->terrain.get());
+    map.SetTopograpgy(data_components->topography.get());
+    map.SetAirspaces(data_components->airspaces.get());
+    map.SetWaypoints(data_components->waypoints.get());
     map.SetTask(protected_task_manager);
     map.SetGlideComputer(glide_computer);
   }
@@ -654,7 +656,8 @@ TargetWidget::OnNameClicked()
     waypoint = tp.GetWaypointPtr();
   }
 
-  dlgWaypointDetailsShowModal(waypoint, false);
+  dlgWaypointDetailsShowModal(data_components->waypoints.get(),
+                              waypoint, false);
 }
 
 bool
@@ -686,7 +689,7 @@ TargetWidget::InitTargetPoints(int _target_point)
     target_point = initial_active_task_point;
   }
 
-  target_point = Clamp(int(target_point), 0, (int)task_size - 1);
+  target_point = std::clamp(int(target_point), 0, (int)task_size - 1);
   return true;
 }
 

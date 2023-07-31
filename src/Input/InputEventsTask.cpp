@@ -5,7 +5,6 @@
 #include "util/Macros.hpp"
 #include "Language/Language.hpp"
 #include "Message.hpp"
-#include "Components.hpp"
 #include "Interface.hpp"
 #include "ActionInterface.hpp"
 #include "Protection.hpp"
@@ -24,6 +23,8 @@
 #include "Engine/Waypoint/Waypoints.hpp"
 #include "Engine/Navigation/Aircraft.hpp"
 #include "system/Path.hpp"
+#include "Components.hpp"
+#include "DataComponents.hpp"
 
 static void
 trigger_redraw()
@@ -99,7 +100,7 @@ InputEvents::eventGotoLookup([[maybe_unused]] const TCHAR *misc)
   if (protected_task_manager == NULL)
     return;
 
-  auto wp = ShowWaypointListDialog(basic.location);
+  auto wp = ShowWaypointListDialog(*data_components->waypoints, basic.location);
   if (wp != NULL) {
     protected_task_manager->DoGoto(std::move(wp));
     trigger_redraw();
@@ -254,6 +255,8 @@ InputEvents::eventTaskLoad(const TCHAR *misc)
     return;
 
   if (!StringIsEmpty(misc)) {
+    auto &way_points = *data_components->waypoints;
+
     const auto task = TaskFile::GetTask(LocalPath(misc),
                                         CommonInterface::GetComputerSettings().task,
                                         &way_points, 0);
@@ -293,7 +296,7 @@ InputEvents::eventTaskTransition(const TCHAR *misc)
   if (StringIsEqual(misc, _T("start"))) {
     const StartStats &start_stats =
       CommonInterface::Calculated().ordered_task_stats.start;
-    if (!start_stats.task_started)
+    if (!start_stats.HasStarted())
       return;
 
     TCHAR TempAll[120];
